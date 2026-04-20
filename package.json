@@ -1,0 +1,19 @@
+{
+  "name": "3d-digital-factory",
+  "version": "1.0.0",
+  "description": "基于WebGL的3D数字工厂可视化系统",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": ["3d", "webgl", "three.js", "visualization", "digital-factory"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/three": "^0.184.0",
+    "three": "^0.184.0",
+    "vite": "^8.0.9"
+  }
+}

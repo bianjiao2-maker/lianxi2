@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D数字工厂可视化系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        }
+        
+        #app {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+        
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .ui-panel {
+            position: absolute;
+            background: rgba(0, 20, 40, 0.85);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            border-radius: 12px;
+            color: #fff;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .header-panel {
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .header-title {
+            font-size: 28px;
+            font-weight: bold;
+            background: linear-gradient(90deg, #00ffff, #0080ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .stats-container {
+            display: flex;
+            gap: 30px;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #00ffff;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #888;
+            margin-top: 4px;
+        }
+        
+        .info-panel {
+            top: 120px;
+            right: 20px;
+            width: 320px;
+            max-height: calc(100vh - 160px);
+            overflow-y: auto;
+        }
+        
+        .panel-title {
+            font-size: 18px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(0, 255, 255, 0.3);
+            color: #00ffff;
+        }
+        
+        .device-info {
+            margin-bottom: 20px;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .info-label {
+            color: #888;
+        }
+        
+        .info-value {
+            font-weight: bold;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .status-normal {
+            background: rgba(0, 255, 100, 0.2);
+            color: #00ff64;
+        }
+        
+        .status-warning {
+            background: rgba(255, 200, 0, 0.2);
+            color: #ffc800;
+        }
+        
+        .status-danger {
+            background: rgba(255, 50, 50, 0.2);
+            color: #ff3232;
+        }
+        
+        .legend-panel {
+            bottom: 20px;
+            left: 20px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+        
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: #fff;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 1000;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+        }
+        
+        .data-chart {
+            margin-top: 15px;
+            height: 100px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .chart-bar {
+            position: absolute;
+            bottom: 0;
+            width: 8px;
+            background: linear-gradient(to top, #0080ff, #00ffff);
+            border-radius: 2px 2px 0 0;
+            transition: height 0.3s;
+        }
+        
+        .controls-hint {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #888;
+        }
+        
+        .controls-hint div {
+            margin: 5px 0;
+        }
+        
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s;
+        }
+        
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(0, 255, 255, 0.2);
+            border-top-color: #00ffff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        .loading-text {
+            margin-top: 20px;
+            color: #00ffff;
+            font-size: 16px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div id="loading-screen" class="loading-screen">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">正在加载3D数字工厂...</div>
+        </div>
+        
+        <div id="canvas-container"></div>
+        
+        <div class="ui-panel header-panel">
+            <div class="header-title">🏭 3D数字工厂可视化系统</div>
+            <div class="stats-container">
+                <div class="stat-item">
+                    <div class="stat-value" id="total-devices">12</div>
+                    <div class="stat-label">设备总数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="running-devices">10</div>
+                    <div class="stat-label">运行中</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="warning-devices">1</div>
+                    <div class="stat-label">警告</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="fps-counter">60</div>
+                    <div class="stat-label">FPS</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="ui-panel info-panel" id="info-panel">
+            <div class="panel-title">设备详情</div>
+            <div id="device-details">
+                <div style="color: #666; text-align: center; padding: 20px;">
+                    点击设备查看详情
+                </div>
+            </div>
+        </div>
+        
+        <div class="ui-panel legend-panel">
+            <div class="legend-item">
+                <div class="legend-color" style="background: #00ff64;"></div>
+                <span>正常运行</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #ffc800;"></div>
+                <span>警告状态</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #ff3232;"></div>
+                <span>故障状态</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #666;"></div>
+                <span>停机状态</span>
+            </div>
+        </div>
+        
+        <div class="controls-hint">
+            <div>🖱️ 左键拖拽：旋转视角</div>
+            <div>🖱️ 右键拖拽：平移视角</div>
+            <div>🖱️ 滚轮：缩放视角</div>
+            <div>👆 点击设备：查看详情</div>
+        </div>
+        
+        <div class="tooltip" id="tooltip"></div>
+    </div>
+    
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html>
